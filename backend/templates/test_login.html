@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Analysis API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            overflow: auto;
+            border-radius: 5px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Dream Analysis API Test</h1>
+    
+    <div class="container">
+        <h2>Step 1: Login</h2>
+        <div class="form-group">
+            <label for="username">Email or Username:</label>
+            <input type="text" id="username" placeholder="Enter email or username">
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        <button id="loginBtn">Login</button>
+        <div id="loginResult" class="form-group"></div>
+    </div>
+    
+    <div class="container">
+        <h2>Step 2: Health Check (No Auth)</h2>
+        <button id="healthBtn">Check Health</button>
+        <div id="healthResult" class="form-group"></div>
+    </div>
+    
+    <div class="container">
+        <h2>Step 3: Analyze Dream (With Auth)</h2>
+        <div class="form-group">
+            <label for="dreamText">Dream Text:</label>
+            <textarea id="dreamText" rows="5" placeholder="Enter your dream..."></textarea>
+        </div>
+        <button id="analyzeBtn">Analyze Dream</button>
+        <div id="analyzeResult" class="form-group"></div>
+    </div>
+    
+    <script>
+        // Store token
+        let accessToken = '';
+        const baseUrl = 'http://localhost:5000';
+        
+        // Login
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email_or_username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    accessToken = data.access_token;
+                    resultDiv.innerHTML = `<p class="success">Login successful! Token: ${accessToken.substring(0, 10)}...</p>`;
+                    resultDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Login failed: ${data.message}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Health check
+        document.getElementById('healthBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('healthResult');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<p class="success">Health check successful!</p>`;
+                    resultDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Health check failed: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Analyze dream
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const dreamText = document.getElementById('dreamText').value;
+            const resultDiv = document.getElementById('analyzeResult');
+            
+            if (!accessToken) {
+                resultDiv.innerHTML = `<p class="error">Please login first!</p>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/dreams/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        dreamText: dreamText
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<p class="success">Dream analysis successful!</p>`;
+                    resultDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Dream analysis failed: ${data.message}</p>`;
+                    resultDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html> 
