@@ -43,3 +43,100 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.fvm/
+flutter_*.log
+*.log
+
+# Android
+android/.gradle/
+android/app/src/main/java/io/flutter/plugins/
+android/local.properties
+android/key.properties
+*.keystore
+*.jks
+
+# iOS
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Runner.xcworkspace/
+ios/Pods/
+ios/.symlinks/
+
+# Python Backend
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
+
+# Environment variables (IMPORTANT: Don't commit secrets!)
+.env
+.env.local
+.env.production
+.env.development
+backend/.env
+backend/.env.*
+
+# Database files (don't commit local databases)
+backend/instance/
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# API keys and secrets (extra safety)
+*secret*
+*key*
+!pubspec.yaml
+!generate_secrets.py
+
+# Build outputs
+*.apk
+*.aab
+*.ipa

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 from app import create_app, db
 
 def main():
@@ -13,12 +14,17 @@ def main():
             db.create_all()
             print("✅ Database is ready.")
 
-        print("🚀 Starting Server on port 5000...")
-        print("🌐 Available at: http://localhost:5000")
+        # Get port from environment variable for cloud deployment
+        port = int(os.environ.get('PORT', 5000))
+        debug = os.environ.get('FLASK_ENV', 'development') == 'development'
+        
+        print(f"🚀 Starting Server on port {port}...")
+        if debug:
+            print("🌐 Available at: http://localhost:5000")
         print("⚡ Press Ctrl+C to stop the server")
         
-        # Running in debug mode is fine now that setup is separate
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        # Use debug=False for production
+        app.run(host='0.0.0.0', port=port, debug=debug)
 
     except Exception as e:
         print(f"❌ Failed to start server: {e}")

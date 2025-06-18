@@ -2,18 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../models/dream_analysis.dart';
+import '../config/app_config.dart';
 import 'auth_service.dart';
 
 class DreamService {
   final AuthService _authService = AuthService();
   
-  static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000'; // Web browsers
-    } else {
-      return 'http://10.0.2.2:5000'; // Android emulator
-    }
-  }
+  static String get baseUrl => AppConfig.baseUrl;
   
   Future<DreamAnalysis?> analyzeDream(String dreamText, {String? mood, List<String>? tags}) async {
     try {

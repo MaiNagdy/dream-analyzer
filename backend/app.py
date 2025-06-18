@@ -31,9 +31,19 @@ def create_app(config_name=None):
     jwt = JWTManager(app)
     migrate = Migrate(app, db)
     
-    # Configure CORS
-    CORS(app, origins=['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'], 
-         supports_credentials=True)
+    # Configure CORS - Allow mobile apps and web clients
+    if app.config.get('FLASK_ENV') == 'production':
+        # In production, be more restrictive but allow mobile apps
+        CORS(app, 
+             origins=['*'],  # Mobile apps don't send traditional origins
+             allow_headers=['Content-Type', 'Authorization'],
+             methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+             supports_credentials=False)  # Mobile apps typically don't use credentials
+    else:
+        # Development: allow localhost
+        CORS(app, 
+             origins=['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'], 
+             supports_credentials=True)
     
     # Register blueprints
     app.register_blueprint(auth_bp)
