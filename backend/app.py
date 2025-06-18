@@ -57,6 +57,17 @@ def create_app(config_name=None):
         jti = jwt_payload['jti']
         return jti in blacklisted_tokens
     
+    # Root endpoint
+    @app.route('/', methods=['GET'])
+    def root():
+        """Root endpoint"""
+        return jsonify({
+            'message': 'Dream Analyzer API',
+            'status': 'running',
+            'version': '2.0.0',
+            'health_check': '/api/health'
+        }), 200
+    
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
     def health_check():
