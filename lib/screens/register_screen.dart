@@ -60,7 +60,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
-        _showErrorDialog(result['message']);
+        final msg = result['message'] ?? 'حدث خطأ، يرجى المحاولة مرة أخرى';
+        _showErrorDialog(msg);
       }
     } catch (e) {
       _showErrorDialog('حدث خطأ أثناء إنشاء الحساب');
@@ -296,6 +297,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B46C1),
+                        disabledBackgroundColor: const Color(0xFF6B46C1).withOpacity(0.6),
+                      ),
                       onPressed: _isLoading ? null : _register,
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)

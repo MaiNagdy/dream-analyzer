@@ -44,7 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
-        _showErrorDialog(result['message']);
+        final msg = result['message'] ?? 'يرجى التحقق من بيانات الدخول والمحاولة مرة أخرى';
+        _showErrorDialog(msg);
       }
     } catch (e) {
       _showErrorDialog('حدث خطأ أثناء تسجيل الدخول');
@@ -167,6 +168,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6B46C1),
+                            disabledBackgroundColor: const Color(0xFF6B46C1).withOpacity(0.6),
+                          ),
                           onPressed: _isLoading ? null : _login,
                           child: _isLoading
                               ? const CircularProgressIndicator(color: Colors.white)
