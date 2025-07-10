@@ -158,9 +158,13 @@ def login():
             user = User.query.filter_by(email=login_field.lower()).first()
         else:
             user = User.query.filter_by(username=login_field).first()
-        
-        if not user or not user.check_password(password):
-            return jsonify({'message': 'Invalid credentials'}), 401
+
+        # Distinguish error cases for better UX
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        if not user.check_password(password):
+            return jsonify({'message': 'Incorrect password'}), 401
         
         if not user.is_active:
             return jsonify({'message': 'Account is deactivated'}), 401
