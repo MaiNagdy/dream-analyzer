@@ -18,6 +18,11 @@ def create_app(config_name=None):
     """Application factory pattern"""
     app = Flask(__name__)
     
+    # Ensure INFO logs are emitted to stdout (Railway captures stdout)
+    app.logger.setLevel(logging.INFO)
+    if not app.logger.handlers:
+        app.logger.addHandler(logging.StreamHandler(sys.stdout))
+
     # Load configuration
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
@@ -161,6 +166,7 @@ def create_app(config_name=None):
 
             # Log the messages for debugging (will appear in Railway logs)
             app.logger.info("PROMPT_MESSAGES=%s", messages)
+            print("PROMPT_MESSAGES=", messages, flush=True)
 
             response = client.chat.completions.create(
                 model=app.config['OPENAI_MODEL'],
