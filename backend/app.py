@@ -100,6 +100,9 @@ def create_app(config_name=None):
             return jsonify({'message': 'Dream text is required'}), 400
         
         dream_text = data['dreamText'].strip()
+        # Optional user context (age, gender, etc.) sent from mobile app
+        user_context = data.get('context')
+
         if not dream_text:
             return jsonify({'message': 'Dream text cannot be empty'}), 400
         
@@ -131,23 +134,37 @@ def create_app(config_name=None):
                 http_client=http_client_no_proxy
             )
 
-            prompt = f"""
-أنت محلل أحلام خبير ومتخصص في علم النفس. حلل الحلم التالي وقدم رؤى عميقة ومفيدة:
-الحلم: {dream_text}
-يرجى تقديم:
-1. تحليل شامل للحلم مع تفسير الرموز والمعاني
-2. الرسائل النفسية والعاطفية
-3. الدلالات المحتملة في الحياة الواقعية
-4. نصائح شخصية للاستفادة من هذا الحلم
-أجب باللغة العربية فقط.
-"""
-            
+            # -------- Build messages with context as a dedicated turn --------
+            system_msg = (
+                "أنت محلل أحلام خبير ومتخصص في علم النفس. "
+                "استخدم دائماً المعلومات الشخصية المرفقة (إن وجدت) لإضفاء طابع شخصي على التحليل. "
+                "أجب باللغة العربية فقط."
+            )
+
+            dream_prompt = (
+                f"الحلم: {dream_text}\n"
+                "يرجى تقديم:\n"
+                "1. تحليل شامل للحلم مع تفسير الرموز والمعاني\n"
+                "2. الرسائل النفسية والعاطفية\n"
+                "3. الدلالات المحتملة في الحياة الواقعية\n"
+                "4. نصائح شخصية مرتبطة بالمعلومات السابقة"
+            )
+
+            messages = [
+                {"role": "system", "content": system_msg},
+            ]
+
+            if user_context:
+                messages.append({"role": "user", "content": f"معلومات عن الشخص: {user_context}"})
+
+            messages.append({"role": "user", "content": dream_prompt})
+
+            # Log the messages for debugging (will appear in Railway logs)
+            app.logger.info("PROMPT_MESSAGES=%s", messages)
+
             response = client.chat.completions.create(
                 model=app.config['OPENAI_MODEL'],
-                messages=[
-                    {"role": "system", "content": "أنت محلل أحلام خبير ومتخصص في علم النفس. تجيب باللغة العربية فقط."},
-                    {"role": "user", "content": prompt}
-                ],
+                messages=messages,
                 max_tokens=app.config['OPENAI_MAX_TOKENS'],
                 temperature=app.config['OPENAI_TEMPERATURE']
             )
