@@ -23,6 +23,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     last_login = db.Column(db.DateTime, nullable=True)
+    credits = db.Column(db.Integer, default=0, nullable=False)
     
     # Relationships
     dreams = db.relationship('DreamAnalysis', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -59,7 +60,8 @@ class User(db.Model):
             'email_verified': self.email_verified,
             'created_at': self.created_at.isoformat(),
             'last_login': self.last_login.isoformat() if self.last_login else None,
-            'dream_count': self.get_dream_count()
+            'dream_count': self.get_dream_count(),
+            'credits': getattr(self, 'credits', 0)
         }
 
 class UserSession(db.Model):

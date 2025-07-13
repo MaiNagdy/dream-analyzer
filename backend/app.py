@@ -52,6 +52,11 @@ def create_app(config_name=None):
     
     # Register blueprints
     app.register_blueprint(auth_bp)
+    try:
+        from purchases import purchases_bp
+        app.register_blueprint(purchases_bp)
+    except Exception as e:
+        app.logger.warning(f"Purchases blueprint not loaded: {e}")
     
     # JWT token blacklist check
     # This is a simplified in-memory blacklist. For production, use Redis or a database.
