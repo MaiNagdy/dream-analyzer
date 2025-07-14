@@ -10,6 +10,12 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false; // Added back for logout compatibility
   String? _lastError;
   int _credits = 0; // dream credits remaining
+  
+  // Subscription state
+  String _subscriptionStatus = 'none';
+  String? _subscriptionType;
+  DateTime? _subscriptionEndDate;
+  bool _subscriptionAutoRenew = true;
 
   User? get user => _user;
   bool get isLoggedIn => _isLoggedIn;
@@ -17,6 +23,15 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading; // Getter for legacy loading usage
   String? get lastError => _lastError;
   int get credits => _credits;
+  
+  // Subscription getters
+  String get subscriptionStatus => _subscriptionStatus;
+  String? get subscriptionType => _subscriptionType;
+  DateTime? get subscriptionEndDate => _subscriptionEndDate;
+  bool get subscriptionAutoRenew => _subscriptionAutoRenew;
+  bool get hasActiveSubscription => _subscriptionStatus == 'active' && 
+      _subscriptionEndDate != null && 
+      _subscriptionEndDate!.isAfter(DateTime.now());
 
   // Initialize authentication state
   Future<void> init() async {
@@ -251,6 +266,38 @@ class AuthProvider with ChangeNotifier {
   void clearError() {
     _lastError = null;
     notifyListeners();
+  }
+
+  // ----------- Subscription helpers -----------
+  void updateSubscriptionStatus(Map<String, dynamic> subscriptionData) {
+    _subscriptionStatus = subscriptionData['subscription_status'] ?? 'none';
+    _subscriptionType = subscriptionData['subscription_type'];
+    
+    if (subscriptionData['subscription_end_date'] != null) {
+      _subscriptionEndDate = DateTime.parse(subscriptionData['subscription_end_date']);
+    } else {
+      _subscriptionEndDate = null;
+    }
+    
+    _subscriptionAutoRenew = subscriptionData['subscription_auto_renew'] ?? true;
+    
+    // Also update credits if provided
+    if (subscriptionData['credits'] != null) {
+      _credits = subscriptionData['credits'] as int;
+    }
+    
+    notifyListeners();
+  }
+
+  Future<void> refreshSubscriptionStatus() async {
+    try {
+      final response = await _authService.getSubscriptionStatus();
+      if (response != null) {
+        updateSubscriptionStatus(response);
+      }
+    } catch (e) {
+      debugPrint('Failed to refresh subscription status: $e');
+    }
   }
 
   // Update user settings locally and persist to secure storage

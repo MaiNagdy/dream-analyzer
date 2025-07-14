@@ -3,6 +3,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:provider/provider.dart';
 import '../services/iap_service.dart';
 import '../providers/auth_provider.dart';
+import '../services/auth_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';

@@ -58,6 +58,12 @@ def create_app(config_name=None):
     except Exception as e:
         app.logger.warning(f"Purchases blueprint not loaded: {e}")
     
+    try:
+        from subscriptions import subscriptions_bp
+        app.register_blueprint(subscriptions_bp)
+    except Exception as e:
+        app.logger.warning(f"Subscriptions blueprint not loaded: {e}")
+    
     # JWT token blacklist check
     # This is a simplified in-memory blacklist. For production, use Redis or a database.
     blacklisted_tokens = set()
@@ -104,6 +110,26 @@ def create_app(config_name=None):
         
         if not user:
             return jsonify({'message': 'User not found'}), 404
+        
+        # Check subscription status
+        now = datetime.utcnow()
+        has_active_subscription = (
+            user.subscription_status == 'active' and 
+            user.subscription_end_date and 
+            user.subscription_end_date > now
+        )
+        
+        # If no active subscription, check credits
+        if not has_active_subscription:
+            if user.credits <= 0:
+                return jsonify({
+                    'message': 'No credits available',
+                    'requires_subscription': True,
+                    'subscription_status': user.subscription_status
+                }), 402  # Payment Required
+            
+            # Consume one credit
+            user.credits -= 1
         
         data = request.get_json()
         if not data or 'dreamText' not in data:

@@ -12,14 +12,32 @@ class DreamService {
   
   Future<DreamAnalysis?> analyzeDream(String dreamText, {String? mood, List<String>? tags}) async {
     try {
+      // Ensure user has credits
+      final authProviderUser = await _authService.getUser();
+      // We just check local storage; proper implementation should query provider
+
+      // Add user context for better AI analysis if available
+      String? context;
+      try {
+        final user = await _authService.getUser();
+        if (user != null) {
+          context = user.getAIContext();
+        }
+        debugPrint('👉 Context sent to server: $context');   // أضِف هذا السطر
+
+      } catch (_) {
+        // Ignore errors getting user context
+      }
+
       final response = await _authService.authenticatedRequest(
         '/api/dreams/analyze',
         method: 'POST',
-                  body: {
-            'dreamText': dreamText,
-            'mood_before': mood,
-            'tags': tags,
-          },
+        body: {
+          'dreamText': dreamText,
+          'mood_before': mood,
+          'tags': tags,
+          if (context != null && context.isNotEmpty) 'context': context,
+        },
       );
 
       if (response.statusCode == 200) {
@@ -27,12 +45,10 @@ class DreamService {
         if (data['success'] == true) {
           return DreamAnalysis.fromJson(data);
         }
-      } else {
-        print('Dream analysis failed: ${response.statusCode} - ${response.body}');
       }
       return null;
     } catch (e) {
-      print('Error analyzing dream: $e');
+      // Silent error handling for production
       return null;
     }
   }
@@ -50,12 +66,10 @@ class DreamService {
           final List<dynamic> dreams = data['dreams'];
           return dreams.map((dream) => DreamAnalysis.fromHistoryJson(dream)).toList();
         }
-      } else {
-        print('Get dream history failed: ${response.statusCode} - ${response.body}');
       }
       return [];
     } catch (e) {
-      print('Error getting dream history: $e');
+      // Silent error handling for production
       return [];
     }
   }
@@ -73,7 +87,7 @@ class DreamService {
       }
       return false;
     } catch (e) {
-      print('Error deleting dream: $e');
+      // Silent error handling for production
       return false;
     }
   }
@@ -93,7 +107,7 @@ class DreamService {
       }
       return null;
     } catch (e) {
-      print('Error getting user stats: $e');
+      // Silent error handling for production
       return null;
     }
   }
@@ -114,17 +128,18 @@ class DreamService {
         'حب',
       ];
     } catch (e) {
-      print('Error getting popular tags: $e');
+      // Silent error handling for production
       return [];
     }
   }
 
   Future<bool> checkServerHealth() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/health'));
+      final response = await http.get(Uri.parse('$baseUrl/api/health'))
+          .timeout(const Duration(seconds: 2)); // Very short timeout
       return response.statusCode == 200;
     } catch (e) {
-      print('Server health check failed: $e');
+      // Silent error handling for production
       return false;
     }
   }

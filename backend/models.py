@@ -25,9 +25,17 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, nullable=True)
     credits = db.Column(db.Integer, default=0, nullable=False)
     
+    # Subscription fields
+    subscription_status = db.Column(db.String(20), default='none', nullable=False)  # none, active, expired, cancelled
+    subscription_type = db.Column(db.String(50), nullable=True)  # pack_10_dreams, pack_30_dreams
+    subscription_start_date = db.Column(db.DateTime, nullable=True)
+    subscription_end_date = db.Column(db.DateTime, nullable=True)
+    subscription_auto_renew = db.Column(db.Boolean, default=True, nullable=False)
+    
     # Relationships
     dreams = db.relationship('DreamAnalysis', backref='user', lazy=True, cascade='all, delete-orphan')
     sessions = db.relationship('UserSession', backref='user', lazy=True, cascade='all, delete-orphan')
+    purchases = db.relationship('Purchase', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         """Hash and set password"""
@@ -61,7 +69,12 @@ class User(db.Model):
             'created_at': self.created_at.isoformat(),
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'dream_count': self.get_dream_count(),
-            'credits': getattr(self, 'credits', 0)
+            'credits': getattr(self, 'credits', 0),
+            'subscription_status': getattr(self, 'subscription_status', 'none'),
+            'subscription_type': getattr(self, 'subscription_type', None),
+            'subscription_start_date': self.subscription_start_date.isoformat() if getattr(self, 'subscription_start_date', None) else None,
+            'subscription_end_date': self.subscription_end_date.isoformat() if getattr(self, 'subscription_end_date', None) else None,
+            'subscription_auto_renew': getattr(self, 'subscription_auto_renew', True)
         }
 
 class UserSession(db.Model):
@@ -105,6 +118,46 @@ class DreamAnalysis(db.Model):
             'is_private': self.is_private,
             'created_at': self.created_at.isoformat(),
             'timestamp': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+class Purchase(db.Model):
+    __tablename__ = 'purchases'
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, index=True)
+    product_id = db.Column(db.String(100), nullable=False)  # pack_10_dreams, pack_30_dreams
+    purchase_token = db.Column(db.String(500), nullable=False, unique=True)
+    order_id = db.Column(db.String(100), nullable=True)
+    purchase_time = db.Column(db.DateTime, nullable=False)
+    purchase_state = db.Column(db.Integer, nullable=False)  # 0=purchased, 1=cancelled
+    consumption_state = db.Column(db.Integer, nullable=False)  # 0=not consumed, 1=consumed
+    acknowledgement_state = db.Column(db.Integer, nullable=False)  # 0=not acknowledged, 1=acknowledged
+    credits_granted = db.Column(db.Integer, default=0, nullable=False)
+    is_subscription = db.Column(db.Boolean, default=True, nullable=False)
+    subscription_period_start = db.Column(db.DateTime, nullable=True)
+    subscription_period_end = db.Column(db.DateTime, nullable=True)
+    auto_renewing = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'user_id': str(self.user_id),
+            'product_id': self.product_id,
+            'purchase_token': self.purchase_token,
+            'order_id': self.order_id,
+            'purchase_time': self.purchase_time.isoformat(),
+            'purchase_state': self.purchase_state,
+            'consumption_state': self.consumption_state,
+            'acknowledgement_state': self.acknowledgement_state,
+            'credits_granted': self.credits_granted,
+            'is_subscription': self.is_subscription,
+            'subscription_period_start': self.subscription_period_start.isoformat() if self.subscription_period_start else None,
+            'subscription_period_end': self.subscription_period_end.isoformat() if self.subscription_period_end else None,
+            'auto_renewing': self.auto_renewing,
+            'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
 

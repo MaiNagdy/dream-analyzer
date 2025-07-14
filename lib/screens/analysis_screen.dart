@@ -68,7 +68,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        DateFormat('MMMM dd, yyyy - HH:mm').format(widget.analysis.timestamp),
+                        DateFormat('dd MMMM yyyy - HH:mm', 'ar').format(widget.analysis.timestamp),
                         style: const TextStyle(
                           color: Color(0xFF64748B),
                           fontWeight: FontWeight.w500,
@@ -275,7 +275,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
   void _shareAnalysis() {
     final shareText = '''
-تحليل الحلم - ${DateFormat('MMM dd, yyyy').format(widget.analysis.timestamp)}
+تحليل الحلم - ${DateFormat('dd MMMM yyyy', 'ar').format(widget.analysis.timestamp)}
 
 الحلم: ${widget.analysis.dreamText}
 

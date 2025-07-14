@@ -14,8 +14,10 @@ class IAPService {
   StreamSubscription<List<PurchaseDetails>>? _sub;
 
   Future<void> init(void Function(PurchaseDetails) onPurchase) async {
-    if (!await _iap.isAvailable()) throw 'Play Store unavailable';
-    _sub ??= _iap.purchaseStream.listen(onPurchase);
+    if (!await _iap.isAvailable()) throw 'Play unavailable';
+    _sub ??= _iap.purchaseStream.listen((purchases) {
+      for (final p in purchases) onPurchase(p);
+    });
   }
 
   Future<List<ProductDetails>> products() async {

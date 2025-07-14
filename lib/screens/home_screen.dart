@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:ui' as ui;
 import '../services/dream_service.dart';
 import 'buy_credits_screen.dart';
+import 'subscription_screen.dart';
 import '../providers/auth_provider.dart';
 import 'analysis_screen.dart';
 import 'history_screen.dart';
@@ -66,13 +67,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _analyzeDream(String dreamText) async {
-    // Check and consume a credit; if none, prompt user to buy
     final authProv = Provider.of<AuthProvider>(context, listen: false);
-    final ok = authProv.consumeCredit();
-    if (!ok) {
-      _showMessage('رصيدك من التحليلات انتهى؛ يرجى شراء حزمة جديدة');
-      _safeNavigate(const BuyCreditsScreen());
-      return;
+    
+    // Check if user has active subscription
+    if (authProv.hasActiveSubscription) {
+      // User has active subscription, can analyze unlimited dreams
+    } else {
+      // No active subscription, check credits
+      final ok = authProv.consumeCredit();
+      if (!ok) {
+        _showMessage('رصيدك من التحليلات انتهى؛ يرجى شراء اشتراك أو حزمة جديدة');
+        _safeNavigate(const SubscriptionScreen());
+        return;
+      }
     }
 
     if (dreamText.trim().isEmpty) {
@@ -234,6 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     case 'tips':
                       _safeNavigate(const TipsScreen());
                       break;
+                    case 'subscription':
+                      _safeNavigate(const SubscriptionScreen());
+                      break;
                     case 'settings':
                       _safeNavigate(const SettingsScreen());
                       break;
@@ -266,6 +276,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(Icons.tips_and_updates, color: Color(0xFF6B46C1)),
                       SizedBox(width: 12),
                       Text('نصائح الأحلام'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'subscription',
+                  child: Row(
+                    children: [
+                      Icon(Icons.star, color: Color(0xFFFFB000)),
+                      SizedBox(width: 12),
+                      Text('الاشتراكات'),
                     ],
                   ),
                 ),

@@ -15,26 +15,20 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _fullNameController = TextEditingController();
-  final _phoneController = TextEditingController();
   
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String? _selectedGender;
-  DateTime? _selectedDate;
 
   @override
   void dispose() {
     _emailController.dispose();
-    _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _fullNameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -45,73 +39,171 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final String emailTrimmed = _emailController.text.trim();
+      String derivedUsername = emailTrimmed.split('@').first;
+      // Remove non-alphanumeric characters and ensure length >=3
+      derivedUsername = derivedUsername.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');
+      if (derivedUsername.length < 3) {
+        derivedUsername = (derivedUsername + DateTime.now().millisecondsSinceEpoch.toString()).substring(0, 6);
+      }
+
       final result = await authProvider.register(
-        email: _emailController.text.trim(),
-        username: _usernameController.text.trim(),
+        email: emailTrimmed,
+        username: derivedUsername,
         password: _passwordController.text,
-        fullName: _fullNameController.text.trim().isEmpty ? null : _fullNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        dateOfBirth: _selectedDate,
-        gender: _selectedGender,
+        fullName: _fullNameController.text.trim(),
       );
 
+      // Always reset loading state first
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+
+      if (!mounted) return;
+
       if (result['success']) {
+        // Small delay to ensure state is properly updated
+        await Future.delayed(const Duration(milliseconds: 100));
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
+        // Check for specific registration errors
         final msg = result['message'] ?? 'حدث خطأ، يرجى المحاولة مرة أخرى';
-        _showErrorDialog(msg);
+        String specificMessage = msg;
+        
+        // Handle email already registered error
+        if (msg.contains('البريد الإلكتروني مسجل مسبقاً') || 
+            msg.contains('email already') || 
+            msg.contains('already registered')) {
+          specificMessage = 'هذا البريد الإلكتروني مسجل مسبقاً. يرجى تسجيل الدخول أو استخدام بريد إلكتروني آخر';
+        }
+        // Handle generic validation errors
+        else if (msg.contains('بيانات غير صحيحة') || 
+                 msg.contains('invalid') || 
+                 msg.contains('validation')) {
+          specificMessage = 'يرجى التحقق من صحة البيانات المدخلة';
+        }
+        // Handle network errors
+        else if (msg.contains('network') || msg.contains('connection')) {
+          specificMessage = 'مشكلة في الاتصال. يرجى المحاولة مرة أخرى';
+        }
+        
+        _showErrorDialog(specificMessage);
       }
     } catch (e) {
-      _showErrorDialog('حدث خطأ أثناء إنشاء الحساب');
-    } finally {
+      // Always reset loading state
       if (mounted) {
         setState(() => _isLoading = false);
       }
+      
+      if (!mounted) return;
+      _showErrorDialog('حدث خطأ أثناء إنشاء الحساب. يرجى المحاولة مرة أخرى');
+      print('Registration error: $e'); // Debug info
     }
   }
 
   void _showErrorDialog(String message) {
     if (!mounted) return;
+    
+    // Check if this is an "email already registered" error
+    bool isEmailAlreadyRegistered = message.contains('البريد الإلكتروني مسجل مسبقاً') ||
+                                   message.contains('email already') ||
+                                   message.contains('already registered') ||
+                                   message.contains('مسجل مسبقاً');
+    
+    // Show SnackBar first for immediate feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, textDirection: ui.TextDirection.rtl),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        backgroundColor: isEmailAlreadyRegistered ? Colors.orange : Colors.red,
+        action: isEmailAlreadyRegistered ? SnackBarAction(
+          label: 'تسجيل دخول',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.of(context).pop(); // Go back to login
+          },
+        ) : null,
+      ),
+    );
+
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => Directionality(
         textDirection: ui.TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('خطأ'),
-          content: Text(message),
+          title: Row(
+            children: [
+              Icon(
+                isEmailAlreadyRegistered ? Icons.email_outlined : Icons.error,
+                color: isEmailAlreadyRegistered ? Colors.orange : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isEmailAlreadyRegistered ? 'البريد الإلكتروني مسجل مسبقاً' : 'خطأ في إنشاء الحساب'
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              if (isEmailAlreadyRegistered) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: const Text(
+                    'يبدو أن هذا البريد الإلكتروني مسجل مسبقاً. يمكنك تسجيل الدخول بدلاً من إنشاء حساب جديد',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: const Text(
+                    'تأكد من صحة البيانات المدخلة وحاول مرة أخرى',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ],
+          ),
           actions: [
-            // Show "Login instead" button if email is already registered
-            if (message.contains('Email already registered') || message.contains('البريد الإلكتروني مسجل مسبقاً'))
+            if (isEmailAlreadyRegistered)
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).pop(); // Go back to login screen
                 },
-                child: const Text('تسجيل الدخول بدلاً من ذلك'),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.orange.withOpacity(0.1),
+                ),
+                child: const Text('تسجيل الدخول'),
               ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('موافق'),
+              child: const Text('حاول مرة أخرى'),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _selectDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 18 * 365)),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      locale: const Locale('ar', 'SA'),
-    );
-    if (date != null) {
-      setState(() => _selectedDate = date);
-    }
   }
 
   @override
@@ -133,6 +225,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   const SizedBox(height: 20),
                   
+                  // Full name field (required)
+                  TextFormField(
+                    controller: _fullNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'الاسم الكامل *',
+                      prefixIcon: Icon(Icons.badge),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'يرجى إدخال الاسم الكامل';
+                      }
+                      if (value.length < 2) {
+                        return 'الاسم يجب أن يكون حرفين على الأقل';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
                   // Email field
                   TextFormField(
                     controller: _emailController,
@@ -150,86 +262,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       }
                       return null;
                     },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Username field
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'اسم المستخدم *',
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'يرجى إدخال اسم المستخدم';
-                      }
-                      if (value.length < 3) {
-                        return 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Full name field (optional)
-                  TextFormField(
-                    controller: _fullNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'الاسم الكامل',
-                      prefixIcon: Icon(Icons.badge),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Phone field (optional)
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'رقم الهاتف',
-                      prefixIcon: Icon(Icons.phone),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Gender dropdown
-                  DropdownButtonFormField<String>(
-                    value: _selectedGender,
-                    decoration: const InputDecoration(
-                      labelText: 'الجنس',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'male', child: Text('ذكر')),
-                      DropdownMenuItem(value: 'female', child: Text('أنثى')),
-                    ],
-                    onChanged: (value) => setState(() => _selectedGender = value),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Date of birth field
-                  InkWell(
-                    onTap: _selectDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'تاريخ الميلاد',
-                        prefixIcon: Icon(Icons.calendar_today),
-                      ),
-                      child: Text(
-                        _selectedDate != null
-                            ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                            : 'اختر تاريخ الميلاد',
-                        style: TextStyle(
-                          color: _selectedDate != null ? null : Colors.grey[600],
-                        ),
-                      ),
-                    ),
                   ),
                   
                   const SizedBox(height: 16),
@@ -256,6 +288,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       }
                       if (value.length < 6) {
                         return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                      }
+                      if (value.length > 50) {
+                        return 'كلمة المرور طويلة جداً';
                       }
                       return null;
                     },
@@ -292,21 +327,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   const SizedBox(height: 32),
                   
-                  // Register button
+                  // Fixed register button with better styling
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 56,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6B46C1),
                         disabledBackgroundColor: const Color(0xFF6B46C1).withOpacity(0.6),
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: const Color(0xFF6B46C1).withOpacity(0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: _isLoading ? null : _register,
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
                           : const Text(
                               'إنشاء الحساب',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   ),
@@ -318,7 +371,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       const Text('لديك حساب بالفعل؟ '),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                         child: const Text(
                           'تسجيل الدخول',
                           style: TextStyle(fontWeight: FontWeight.bold),
