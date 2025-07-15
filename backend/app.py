@@ -94,6 +94,25 @@ def create_app(config_name=None):
             'version': '2.0.0'
         }), 200
     
+    # Temporary migration endpoint (remove after setup)
+    @app.route('/api/run-migrations', methods=['GET'])
+    def run_migrations():
+        """Run database migrations - TEMPORARY ENDPOINT"""
+        try:
+            # Create all tables
+            db.create_all()
+            return jsonify({
+                'status': 'success',
+                'message': 'Database migrations completed successfully',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': f'Migration failed: {str(e)}',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 500
+    
     # Test login page
     @app.route('/test', methods=['GET'])
     def test_page():
