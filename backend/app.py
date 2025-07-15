@@ -3,7 +3,7 @@ import sys
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, unset_jwt_cookies
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 import openai
 from datetime import datetime
 import logging
@@ -113,6 +113,55 @@ def create_app(config_name=None):
                 'timestamp': datetime.utcnow().isoformat()
             }), 500
     
+    @app.route('/api/run-migrations', methods=['POST'])
+    def run_migrations():
+        """Run database migrations - for deployment only"""
+        try:
+            with app.app_context():
+                # Check database connection
+                db.engine.connect()
+                app.logger.info("Database connection successful")
+                
+                # Run migrations
+                app.logger.info("Running database migrations...")
+                upgrade()
+                app.logger.info("Database migrations completed successfully!")
+                
+                # Verify tables were created
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
+                
+                expected_tables = ['users', 'purchases', 'dream_analyses', 'api_usage', 'user_sessions']
+                app.logger.info(f"Tables in database: {tables}")
+                
+                missing_tables = [table for table in expected_tables if table not in tables]
+                if missing_tables:
+                    app.logger.warning(f"Missing tables: {missing_tables}")
+                    return jsonify({
+                        "status": "warning",
+                        "message": "Migrations completed but some tables are missing",
+                        "tables": tables,
+                        "missing_tables": missing_tables
+                    }), 200
+                else:
+                    app.logger.info("All expected tables are present!")
+                
+                return jsonify({
+                    "status": "success",
+                    "message": "Database migrations completed successfully!",
+                    "tables": tables
+                }), 200
+                
+        except Exception as e:
+            app.logger.error(f"Migration failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                "status": "error",
+                "message": f"Migration failed: {str(e)}"
+            }), 500
+
     # Test login page
     @app.route('/test', methods=['GET'])
     def test_page():
