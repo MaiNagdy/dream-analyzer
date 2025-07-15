@@ -94,22 +94,30 @@ def create_app(config_name=None):
             'version': '2.0.0'
         }), 200
     
-    # Temporary migration endpoint (remove after setup)
-    @app.route('/api/run-migrations', methods=['GET'])
-    def run_migrations():
-        """Run database migrations - TEMPORARY ENDPOINT"""
+    # Database status endpoint
+    @app.route('/api/database/status', methods=['GET'])
+    def database_status():
+        """Check database connection and tables"""
         try:
-            # Create all tables
-            db.create_all()
+            # Test database connection
+            result = db.session.execute(db.text('SELECT 1'))
+            result.fetchone()
+            
+            # Check if tables exist
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            
             return jsonify({
-                'status': 'success',
-                'message': 'Database migrations completed successfully',
+                'status': 'connected',
+                'tables': tables,
+                'table_count': len(tables),
                 'timestamp': datetime.utcnow().isoformat()
             }), 200
         except Exception as e:
             return jsonify({
                 'status': 'error',
-                'message': f'Migration failed: {str(e)}',
+                'message': f'Database error: {str(e)}',
                 'timestamp': datetime.utcnow().isoformat()
             }), 500
     
