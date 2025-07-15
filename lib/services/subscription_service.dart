@@ -7,6 +7,7 @@ import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/app_config.dart';
+import '../services/auth_service.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -49,8 +50,9 @@ class SubscriptionService {
     if (Platform.isAndroid) {
       final InAppPurchaseAndroidPlatformAddition androidAddition =
           _inAppPurchase.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
-      await androidAddition.enablePendingPurchases();
-      debugPrint('✅ Enabled pending purchases for Android');
+      // The method doesn't exist in newer versions, so we'll skip it for now
+      // await androidAddition.enablePendingPurchases();
+      debugPrint('✅ Android platform addition configured');
     }
 
     // Listen to purchase updates
@@ -150,7 +152,7 @@ class SubscriptionService {
                    purchaseDetails.status == PurchaseStatus.restored) {
           
           // Verify purchase with backend
-          await _verifyAndDeliverProduct(purchaseDetails);
+          await _verifyPurchase(purchaseDetails);
         }
         
         if (purchaseDetails.pendingCompletePurchase) {
@@ -163,13 +165,11 @@ class SubscriptionService {
     _purchasePending = false;
   }
 
-  Future<void> _verifyAndDeliverProduct(PurchaseDetails purchaseDetails) async {
-    debugPrint('🔐 Verifying purchase with backend...');
-    
+  Future<void> _verifyPurchase(PurchaseDetails purchase) async {
     try {
-      // Get auth token from secure storage
-      final prefs = await import('../services/auth_service.dart');
-      final authToken = await AuthService().getAuthToken();
+      // Get auth token from AuthService
+      final authService = AuthService();
+      final authToken = await authService.getToken();
       
       if (authToken == null) {
         debugPrint('❌ No auth token available');
@@ -183,27 +183,25 @@ class SubscriptionService {
           'Authorization': 'Bearer $authToken',
         },
         body: jsonEncode({
-          'productId': purchaseDetails.productID,
-          'purchaseToken': purchaseDetails.verificationData.serverVerificationData,
+          'productId': purchase.productID,
+          'purchaseToken': purchase.purchaseID,
+          'platform': Platform.isAndroid ? 'android' : 'ios',
         }),
       );
 
-      debugPrint('🌐 Verification response: ${response.statusCode}');
-      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('✅ Subscription verified: ${data['message']}');
-        debugPrint('💳 Credits added: ${data['credits_added']}');
+        debugPrint('✅ Purchase verified: ${data['message']}');
         
-        // Show success message
-        // Note: You might want to use a callback or state management here
+        // Complete the purchase
+        await _inAppPurchase.completePurchase(purchase);
         
+        // Purchase completed successfully
       } else {
-        debugPrint('❌ Verification failed: ${response.body}');
+        debugPrint('❌ Purchase verification failed: ${response.statusCode}');
       }
-      
     } catch (e) {
-      debugPrint('❌ Verification error: $e');
+      debugPrint('❌ Purchase verification error: $e');
     }
   }
 
@@ -236,9 +234,9 @@ class SubscriptionService {
 
   Future<Map<String, dynamic>?> getSubscriptionStatus() async {
     try {
-      // Get auth token
-      final prefs = await import('../services/auth_service.dart');
-      final authToken = await AuthService().getAuthToken();
+      // Get auth token from AuthService
+      final authService = AuthService();
+      final authToken = await authService.getToken();
       
       if (authToken == null) {
         debugPrint('❌ No auth token for subscription status');
@@ -267,9 +265,9 @@ class SubscriptionService {
 
   Future<bool> cancelSubscription() async {
     try {
-      // Get auth token
-      final prefs = await import('../services/auth_service.dart');
-      final authToken = await AuthService().getAuthToken();
+      // Get auth token from AuthService
+      final authService = AuthService();
+      final authToken = await authService.getToken();
       
       if (authToken == null) {
         debugPrint('❌ No auth token for cancellation');

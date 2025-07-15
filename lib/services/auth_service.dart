@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../config/app_config.dart';
 import 'package:intl/intl.dart';
@@ -410,7 +411,7 @@ class AuthService {
   // Subscription-related methods
   Future<Map<String, dynamic>?> getSubscriptionStatus() async {
     try {
-      final response = await _makeAuthenticatedRequest('GET', '/api/subscriptions/status');
+      final response = await authenticatedRequest('/api/subscriptions/status');
       
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -426,10 +427,12 @@ class AuthService {
 
   Future<Map<String, dynamic>?> verifySubscription(String productId, String purchaseToken) async {
     try {
-      final response = await _makeAuthenticatedRequest('POST', '/api/subscriptions/verify', {
-        'productId': productId,
-        'purchaseToken': purchaseToken,
-      });
+      final response = await authenticatedRequest('/api/subscriptions/verify', 
+        method: 'POST',
+        body: {
+          'productId': productId,
+          'purchaseToken': purchaseToken,
+        });
       
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -445,7 +448,7 @@ class AuthService {
 
   Future<bool> cancelSubscription() async {
     try {
-      final response = await _makeAuthenticatedRequest('POST', '/api/subscriptions/cancel');
+      final response = await authenticatedRequest('/api/subscriptions/cancel', method: 'POST');
       
       if (response.statusCode == 200) {
         return true;
