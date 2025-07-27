@@ -136,6 +136,13 @@ logs/
 !pubspec.yaml
 !generate_secrets.py
 
+# Google Service Account Keys (CRITICAL: Never commit these!)
+*.json
+!pubspec.yaml
+!generate_secrets.py
+backend/service-account*.json
+backend/dreamanalysis*.json
+
 # Build outputs
 *.apk
 *.aab
