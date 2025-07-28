@@ -7,8 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Install MySQL client (for PyMySQL)
-RUN apt-get update && apt-get install -y default-mysql-client && rm -rf /var/lib/apt/lists/*
+# Create directory for SQLite database
+RUN mkdir -p /tmp
 
 ENV PORT=8080
 ENV FLASK_ENV=production

@@ -71,10 +71,8 @@ class ProductionConfig(Config):
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('mysql://', 'mysql+pymysql://', 1)
     
     if not SQLALCHEMY_DATABASE_URI:
-        # Use MySQL for production (will be set via environment variable)
-        # Format: mysql://username:password@host:port/database
-        # Example: mysql://root:mypassword@35.184.131.82:3306/dream_analyzer
-        SQLALCHEMY_DATABASE_URI = 'mysql://root:YOUR_PASSWORD@35.184.131.82:3306/dream_analyzer'
+        # Use SQLite for now (will switch to MySQL when database is ready)
+        SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/dream_app_prod.db'
     
     SQLALCHEMY_ECHO = False
 
