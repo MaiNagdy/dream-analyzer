@@ -1,0 +1,27 @@
+runtime: python311
+entrypoint: gunicorn -b :$PORT app:app
+
+instance_class: F1
+
+automatic_scaling:
+  target_cpu_utilization: 0.8
+  min_instances: 0
+  max_instances: 1
+  max_concurrent_requests: 10
+  target_throughput_utilization: 0.6
+
+env_variables:
+  FLASK_ENV: production
+  SECRET_KEY: "c507ebf4b19a753fef5362eb16169efc31fff5d607c3f8abc06db19a6856fa73"
+  JWT_SECRET_KEY: "a0eb58803234413db9b5ec46dc4d42f9d82a65362ddb8f45792fad547df3f0fb"
+  GOOGLE_APPLICATION_CREDENTIALS: "dreamanalysis.json"
+  ANDROID_PACKAGE_NAME: "com.mai.dreamanalyzer"
+  ALLOWED_ORIGINS: "*"
+  CORS_ORIGINS: "*"
+  DATABASE_URL: "mysql://root:YOUR_PASSWORD@35.184.131.82:3306/dream_analyzer"
+
+handlers:
+  - url: /static
+    static_dir: static
+  - url: /.*
+    script: auto 

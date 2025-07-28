@@ -52,10 +52,10 @@ class DevelopmentConfig(Config):
     # Use SQLite for local development (no psycopg2 required)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///dream_app_dev.db'
     
-    # If DATABASE_URL is PostgreSQL (from Railway), use it
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgresql://'):
-        # Convert postgresql:// to postgresql+psycopg2://
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+psycopg2://', 1)
+    # If DATABASE_URL is MySQL, use it
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('mysql://'):
+        # Convert mysql:// to mysql+pymysql://
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('mysql://', 'mysql+pymysql://', 1)
     
     SQLALCHEMY_ECHO = True  # Log SQL queries in development
 
@@ -64,15 +64,17 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Use PostgreSQL in production
+    # Use MySQL in production
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgresql://'):
-        # Convert postgresql:// to postgresql+psycopg2://
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+psycopg2://', 1)
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('mysql://'):
+        # Convert mysql:// to mysql+pymysql://
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('mysql://', 'mysql+pymysql://', 1)
     
     if not SQLALCHEMY_DATABASE_URI:
-        # Only raise error when actually using the config, not during import
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///fallback.db'
+        # Use MySQL for production (will be set via environment variable)
+        # Format: mysql://username:password@host:port/database
+        # Example: mysql://root:mypassword@35.184.131.82:3306/dream_analyzer
+        SQLALCHEMY_DATABASE_URI = 'mysql://root:YOUR_PASSWORD@35.184.131.82:3306/dream_analyzer'
     
     SQLALCHEMY_ECHO = False
 

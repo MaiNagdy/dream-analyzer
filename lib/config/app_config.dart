@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 
 class AppConfig {
-  static const String _productionBaseUrl = 'https://dream-analyzer-production-9fd5.up.railway.app'; // Your actual Railway deployment
+  static const String _productionBaseUrl = 'https://dream-analyzer-backend-429952025254.us-central1.run.app'; // Your Google Cloud Run deployment
   static const String _developmentBaseUrl = 'http://localhost:5000';
   static const String _emulatorBaseUrl = 'http://10.0.2.2:5000';
   

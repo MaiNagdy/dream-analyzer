@@ -363,8 +363,12 @@ def create_app(config_name=None):
     
     return app
 
+# Create the app instance for gunicorn
+app = create_app()
+
+# Initialize database tables
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5000)
